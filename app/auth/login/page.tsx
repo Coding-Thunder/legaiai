@@ -1,13 +1,12 @@
 "use client"
 
 import type React from "react"
-
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { useAppDispatch } from "@/lib/hooks"
-import { login } from "@/lib/slices/authSlice"
+import { loginAsLawyer, loginAsClient } from "@/lib/slices/authSlice"
 import { showToast } from "@/lib/slices/uiSlice"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -19,40 +18,27 @@ export default function LoginPage() {
     email: "",
     password: "",
   })
+  const [role, setRole] = useState<"lawyer" | "client">("client")
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    // In a real app, this would call an API that returns the user's role from the database
-    const mockUsers = {
-      "lawyer@example.com": {
-        id: "lawyer1",
-        name: "John Smith",
-        role: "lawyer" as const,
-        country: "US",
-        barNumber: "BAR123456",
-      },
-      "client@example.com": {
-        id: "client1",
-        name: "Jane Doe",
-        role: "client" as const,
-        country: "US",
-      },
-    }
-
-    // Determine user role from stored data (mock implementation)
-    const mockUser = mockUsers[formData.email as keyof typeof mockUsers] || {
-      id: "demo1",
-      name: "Demo User",
-      role: "client" as const,
+    // basic mock user info (id, name, country)
+    const baseUser = {
+      id: role === "lawyer" ? "lawyer1" : "client1",
+      name: role === "lawyer" ? "John Smith" : "Jane Doe",
       country: "US",
     }
 
-    dispatch(login({ user: mockUser, token: "mock-jwt-token" }))
-    dispatch(showToast({ message: "Login successful!", type: "success" }))
+    if (role === "lawyer") {
+      dispatch(loginAsLawyer({ user: baseUser, token: "mock-lawyer-token" }))
+    } else {
+      dispatch(loginAsClient({ user: baseUser, token: "mock-client-token" }))
+    }
 
-    // Redirect based on stored user role
-    const redirectPath = mockUser.role === "lawyer" ? "/dashboard/lawyer" : "/dashboard/client"
+    dispatch(showToast({ message: `Logged in as ${role}`, type: "success" }))
+
+    const redirectPath = role === "lawyer" ? "/dashboard/lawyer" : "/dashboard/client"
     router.push(redirectPath)
   }
 
@@ -68,6 +54,7 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Email */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium mb-2">
                 Email
@@ -81,6 +68,7 @@ export default function LoginPage() {
               />
             </div>
 
+            {/* Password */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium mb-2">
                 Password
@@ -92,6 +80,28 @@ export default function LoginPage() {
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
               />
+            </div>
+
+            {/* Role selector */}
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  value="client"
+                  checked={role === "client"}
+                  onChange={() => setRole("client")}
+                />
+                Client
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  value="lawyer"
+                  checked={role === "lawyer"}
+                  onChange={() => setRole("lawyer")}
+                />
+                Lawyer
+              </label>
             </div>
 
             <Button type="submit" className="w-full">

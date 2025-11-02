@@ -1,45 +1,60 @@
-"use client"
+﻿"use client"
 
 import type React from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { useAppDispatch } from "@/lib/hooks"
-import { loginAsLawyer, loginAsClient } from "@/lib/slices/authSlice"
-import { showToast } from "@/lib/slices/uiSlice"
-import { useState } from "react"
+import { useAppDispatch, useAppSelector } from "@/lib/hooks"
+import { loginUser, clearError } from "@/lib/slices/authSlice"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
   const dispatch = useAppDispatch()
   const router = useRouter()
+  const { isLoading, error, isAuthenticated } = useAppSelector((state) => state.auth)
+  
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   })
-  const [role, setRole] = useState<"lawyer" | "client">("client")
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/dashboard')
+    }
+  }, [isAuthenticated, router])
+
+  // Clear errors when component mounts
+  useEffect(() => {
+    dispatch(clearError())
+  }, [dispatch])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    // basic mock user info (id, name, country)
-    const baseUser = {
-      id: role === "lawyer" ? "lawyer1" : "client1",
-      name: role === "lawyer" ? "John Smith" : "Jane Doe",
-      country: "US",
+    
+    if (!formData.email || !formData.password) {
+      return
     }
 
-    if (role === "lawyer") {
-      dispatch(loginAsLawyer({ user: baseUser, token: "mock-lawyer-token" }))
-    } else {
-      dispatch(loginAsClient({ user: baseUser, token: "mock-client-token" }))
+    try {
+      const result = await dispatch(loginUser({
+        email: formData.email,
+        password: formData.password
+      })).unwrap()
+      
+      // Redirect based on user role
+      if (result.user.role === 'lawyer') {
+        router.push('/dashboard/lawyer')
+      } else {
+        router.push('/dashboard/client')
+      }
+    } catch (error) {
+      // Error is already handled by Redux
+      console.error('Login failed:', error)
     }
-
-    dispatch(showToast({ message: `Logged in as ${role}`, type: "success" }))
-
-    const redirectPath = role === "lawyer" ? "/dashboard/lawyer" : "/dashboard/client"
-    router.push(redirectPath)
   }
 
   return (
@@ -53,8 +68,13 @@ export default function LoginPage() {
           <CardDescription>Sign in to your account to continue</CardDescription>
         </CardHeader>
         <CardContent>
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium mb-2">
                 Email
@@ -65,10 +85,10 @@ export default function LoginPage() {
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
+                disabled={isLoading}
               />
             </div>
 
-            {/* Password */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium mb-2">
                 Password
@@ -79,46 +99,26 @@ export default function LoginPage() {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
+                disabled={isLoading}
               />
             </div>
 
-            {/* Role selector */}
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  value="client"
-                  checked={role === "client"}
-                  onChange={() => setRole("client")}
-                />
-                Client
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  value="lawyer"
-                  checked={role === "lawyer"}
-                  onChange={() => setRole("lawyer")}
-                />
-                Lawyer
-              </label>
-            </div>
-
-            <Button type="submit" className="w-full">
-              Sign In
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Signing In..." : "Sign In"}
             </Button>
+
+            <div className="text-center text-sm text-muted-foreground">
+              <Link href="/auth/forgot-password" className="hover:underline">
+                Forgot your password?
+              </Link>
+            </div>
           </form>
 
-          <div className="mt-6 text-center space-y-2">
-            <Link href="/auth/forgot-password" className="text-sm text-black dark:text-white hover:underline">
-              Forgot your password?
+          <div className="mt-6 text-center text-sm">
+            <span className="text-muted-foreground">Don't have an account? </span>
+            <Link href="/auth/register" className="font-medium hover:underline">
+              Sign up
             </Link>
-            <p className="text-sm text-black dark:text-white">
-              Don't have an account?{" "}
-              <Link href="/auth/register" className="text-primary hover:underline">
-                Sign up
-              </Link>
-            </p>
           </div>
         </CardContent>
       </Card>

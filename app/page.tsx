@@ -18,6 +18,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import ApiTestComponent from "@/components/ApiTestComponent";
 
 export default function HomePage() {
   return (
@@ -113,6 +114,11 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* API Integration Test Section */}
+      <section className="container mx-auto px-4 py-12">
+        <ApiTestComponent />
       </section>
 
       {/* Features Section */}

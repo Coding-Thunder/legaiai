@@ -1,3 +1,5 @@
+import { apiClient } from './client'
+
 // Payment API utilities
 export interface PaymentRequest {
   amount: number
@@ -25,15 +27,7 @@ export interface PaymentResponse {
 
 export async function processPayment(paymentData: PaymentRequest): Promise<PaymentResponse> {
   try {
-    const response = await fetch("/api/payments", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(paymentData),
-    })
-
-    const result = await response.json()
+    const result = await apiClient.processPayment(paymentData) as PaymentResponse
     return result
   } catch (error) {
     return {
@@ -46,8 +40,7 @@ export async function processPayment(paymentData: PaymentRequest): Promise<Payme
 
 export async function fetchPaymentHistory(userId: string) {
   try {
-    const response = await fetch(`/api/payments?userId=${userId}`)
-    const result = await response.json()
+    const result = await apiClient.getPaymentHistory(userId)
     return result
   } catch (error) {
     console.error("Failed to fetch payment history:", error)

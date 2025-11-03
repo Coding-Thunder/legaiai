@@ -1,21 +1,22 @@
-"use client"
+﻿"use client"
 
 import type React from "react"
-
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useAppDispatch } from "@/lib/hooks"
-import { login } from "@/lib/slices/authSlice"
-import { showToast } from "@/lib/slices/uiSlice"
-import { useState } from "react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useAppDispatch, useAppSelector } from "@/lib/hooks"
+import { registerUser, clearError } from "@/lib/slices/authSlice"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 
 export default function RegisterPage() {
   const dispatch = useAppDispatch()
   const router = useRouter()
+  const { isLoading, error, isAuthenticated } = useAppSelector((state) => state.auth)
+  
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -23,48 +24,61 @@ export default function RegisterPage() {
     confirmPassword: "",
     role: "" as "lawyer" | "client" | "",
     barNumber: "",
-    isFirm: false,
-    firmName: "",
     agreeToTerms: false,
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/dashboard')
+    }
+  }, [isAuthenticated, router])
+
+  // Clear errors when component mounts
+  useEffect(() => {
+    dispatch(clearError())
+  }, [dispatch])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!formData.role) {
-      dispatch(showToast({ message: "Please select your role", type: "error" }))
       return
     }
 
     if (formData.password !== formData.confirmPassword) {
-      dispatch(showToast({ message: "Passwords do not match", type: "error" }))
       return
     }
 
     if (!formData.agreeToTerms) {
-      dispatch(showToast({ message: "Please agree to the terms and conditions", type: "error" }))
       return
     }
 
-    // Mock registration - in real app, this would call an API
-    const mockUser = {
-      id: `${formData.role}${Date.now()}`,
-      name: formData.name,
-      role: formData.role,
-      country: "US",
-      ...(formData.role === "lawyer" && {
-        barNumber: formData.barNumber,
-        isFirm: formData.isFirm,
-        ...(formData.isFirm && { firmName: formData.firmName }),
-      }),
+    if (formData.role === 'lawyer' && !formData.barNumber) {
+      return
     }
 
-    dispatch(login({ user: mockUser, token: "mock-jwt-token" }))
-    dispatch(showToast({ message: "Registration successful!", type: "success" }))
+    try {
+      const userData = {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+        ...(formData.role === 'lawyer' && { barNumber: formData.barNumber })
+      }
 
-    // Redirect based on role
-    const redirectPath = formData.role === "lawyer" ? "/dashboard/lawyer" : "/dashboard/client"
-    router.push(redirectPath)
+      const result = await dispatch(registerUser(userData)).unwrap()
+      
+      // Redirect based on user role
+      if (result.user.role === 'lawyer') {
+        router.push('/dashboard/lawyer')
+      } else {
+        router.push('/dashboard/client')
+      }
+    } catch (error) {
+      // Error is already handled by Redux
+      console.error('Registration failed:', error)
+    }
   }
 
   return (
@@ -74,10 +88,16 @@ export default function RegisterPage() {
           <Link href="/" className="text-2xl font-bold mb-4 block">
             LegalAI Pro
           </Link>
-          <CardTitle>Create Account</CardTitle>
-          <CardDescription>Join thousands of legal professionals</CardDescription>
+          <CardTitle>Create Your Account</CardTitle>
+          <CardDescription>Join LegalAI Pro to get started</CardDescription>
         </CardHeader>
         <CardContent>
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium mb-2">
@@ -85,9 +105,11 @@ export default function RegisterPage() {
               </label>
               <Input
                 id="name"
+                type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -101,86 +123,39 @@ export default function RegisterPage() {
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
+                disabled={isLoading}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-3">I am a</label>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <Checkbox
-                    id="role-lawyer"
-                    checked={formData.role === "lawyer"}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setFormData({ ...formData, role: "lawyer" })
-                      } else {
-                        setFormData({ ...formData, role: "" })
-                      }
-                    }}
-                  />
-                  <label htmlFor="role-lawyer" className="text-sm font-medium cursor-pointer">
-                    Lawyer
-                  </label>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Checkbox
-                    id="role-client"
-                    checked={formData.role === "client"}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setFormData({ ...formData, role: "client" })
-                      } else {
-                        setFormData({ ...formData, role: "" })
-                      }
-                    }}
-                  />
-                  <label htmlFor="role-client" className="text-sm font-medium cursor-pointer">
-                    Client
-                  </label>
-                </div>
-              </div>
+              <label htmlFor="role" className="block text-sm font-medium mb-2">
+                I am a
+              </label>
+              <Select value={formData.role} onValueChange={(value: "lawyer" | "client") => setFormData({ ...formData, role: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="client">Client</SelectItem>
+                  <SelectItem value="lawyer">Lawyer</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {formData.role === "lawyer" && (
-              <>
-                <div>
-                  <label htmlFor="barNumber" className="block text-sm font-medium mb-2">
-                    Bar Number
-                  </label>
-                  <Input
-                    id="barNumber"
-                    value={formData.barNumber}
-                    onChange={(e) => setFormData({ ...formData, barNumber: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="isFirm"
-                    checked={formData.isFirm}
-                    onCheckedChange={(checked) => setFormData({ ...formData, isFirm: checked as boolean })}
-                  />
-                  <label htmlFor="isFirm" className="text-sm font-medium">
-                    I represent a law firm
-                  </label>
-                </div>
-
-                {formData.isFirm && (
-                  <div>
-                    <label htmlFor="firmName" className="block text-sm font-medium mb-2">
-                      Firm Name
-                    </label>
-                    <Input
-                      id="firmName"
-                      value={formData.firmName}
-                      onChange={(e) => setFormData({ ...formData, firmName: e.target.value })}
-                      required
-                    />
-                  </div>
-                )}
-              </>
+              <div>
+                <label htmlFor="barNumber" className="block text-sm font-medium mb-2">
+                  Bar Number
+                </label>
+                <Input
+                  id="barNumber"
+                  type="text"
+                  value={formData.barNumber}
+                  onChange={(e) => setFormData({ ...formData, barNumber: e.target.value })}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
             )}
 
             <div>
@@ -193,6 +168,7 @@ export default function RegisterPage() {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -206,6 +182,7 @@ export default function RegisterPage() {
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -227,18 +204,16 @@ export default function RegisterPage() {
               </label>
             </div>
 
-            <Button type="submit" className="w-full">
-              Create Account
+            <Button type="submit" className="w-full" disabled={isLoading || !formData.agreeToTerms}>
+              {isLoading ? "Creating Account..." : "Create Account"}
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-black dark:text-white">
-              Already have an account?{" "}
-              <Link href="/auth/login" className="text-primary hover:underline">
-                Sign in
-              </Link>
-            </p>
+          <div className="mt-6 text-center text-sm">
+            <span className="text-muted-foreground">Already have an account? </span>
+            <Link href="/auth/login" className="font-medium hover:underline">
+              Sign in
+            </Link>
           </div>
         </CardContent>
       </Card>

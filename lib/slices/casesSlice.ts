@@ -1,69 +1,126 @@
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit"
+// frontend/lib/slices/casesSlice.ts
+import requests, { CasePayload } from "@/axios/requests";
+import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
 
-export interface Case {
-  id: string
-  title: string
-  description: string
-  petitionType: string
-  status: "active" | "pending" | "closed"
-  lawyerId: string
-  clientId: string
-  createdAt: string
+// frontend/lib/requests.ts (or types.ts)
+export interface CaseType {
+  priority: string;
+  id: string;
+  title: string;
+  description: string;
+  petitionType: string;
+  status: "active" | "pending" | "closed";
+  lawyerId: string;
+  clientId: string;
+  createdAt: string;
+  jurisdiction?: string;
+  courtName?: string;
+  attachments?: { url: string; name?: string; provider?: string }[];
 }
 
+
+// Async thunks
+export const fetchCasesThunk = createAsyncThunk(
+  "cases/fetchCases",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await requests.cases.list();
+      return res.data as CaseType[];
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
+export const createCaseThunk = createAsyncThunk(
+  "cases/createCase",
+  async (data: CasePayload, { rejectWithValue }) => {
+    try {
+      const res = await requests.cases.create(data);
+      return res.data as CaseType;
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
+export const updateCaseThunk = createAsyncThunk(
+  "cases/updateCase",
+  async ({ id, data }: { id: string; data: Partial<CasePayload> }, { rejectWithValue }) => {
+    try {
+      const res = await requests.cases.update(id, data);
+      return res.data as CaseType;
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
+// Slice
 interface CasesState {
-  cases: Case[]
-  loading: boolean
+  cases: CaseType[];
+  loading: boolean;
+  error: string | null;
 }
 
 const initialState: CasesState = {
-  cases: [
-    {
-      id: "1",
-      title: "Property Dispute Case",
-      description: "Boundary dispute between neighbors regarding property lines",
-      petitionType: "Civil",
-      status: "active",
-      lawyerId: "lawyer1",
-      clientId: "client1",
-      createdAt: "2024-01-15",
-    },
-    {
-      id: "2",
-      title: "Contract Violation",
-      description: "Breach of contract in business agreement",
-      petitionType: "Commercial",
-      status: "pending",
-      lawyerId: "lawyer1",
-      clientId: "client2",
-      createdAt: "2024-01-20",
-    },
-  ],
+  cases: [],
   loading: false,
-}
+  error: null,
+};
 
 const casesSlice = createSlice({
   name: "cases",
   initialState,
   reducers: {
-    addCase: (state, action: PayloadAction<Case>) => {
-      state.cases.push(action.payload)
-    },
-    updateCaseStatus: (state, action: PayloadAction<{ id: string; status: Case["status"] }>) => {
-      const caseIndex = state.cases.findIndex((c) => c.id === action.payload.id)
-      if (caseIndex !== -1) {
-        state.cases[caseIndex].status = action.payload.status
-      }
-    },
-    fetchCases: (state) => {
-      state.loading = true
-    },
-    setCases: (state, action: PayloadAction<Case[]>) => {
-      state.cases = action.payload
-      state.loading = false
+    resetCasesError: (state) => {
+      state.error = null;
     },
   },
-})
+  extraReducers: (builder) => {
+    builder
+      // fetchCasesThunk
+      .addCase(fetchCasesThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCasesThunk.fulfilled, (state, action: PayloadAction<CaseType[]>) => {
+        state.loading = false;
+        state.cases = action.payload;
+      })
+      .addCase(fetchCasesThunk.rejected, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // createCaseThunk
+      .addCase(createCaseThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createCaseThunk.fulfilled, (state, action: PayloadAction<CaseType>) => {
+        state.loading = false;
+        state.cases.push(action.payload);
+      })
+      .addCase(createCaseThunk.rejected, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // updateCaseThunk
+      .addCase(updateCaseThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateCaseThunk.fulfilled, (state, action: PayloadAction<CaseType>) => {
+        state.loading = false;
+        const index = state.cases.findIndex((c) => c.id === action.payload.id);
+        if (index !== -1) state.cases[index] = action.payload;
+      })
+      .addCase(updateCaseThunk.rejected, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+  },
+});
 
-export const { addCase, updateCaseStatus, fetchCases, setCases } = casesSlice.actions
-export default casesSlice.reducer
+export const { resetCasesError } = casesSlice.actions;
+export default casesSlice.reducer;

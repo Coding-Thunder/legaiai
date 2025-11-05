@@ -4,10 +4,10 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { useAppDispatch, useAppSelector } from "@/lib/hooks"
-import { logout } from "@/lib/slices/authSlice"
 import { useRouter } from "next/navigation"
 import { LayoutDashboard, Briefcase, Search, CreditCard, User, LogOut } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { logoutUser } from "@/lib/slices/authSlice"
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard/client", icon: LayoutDashboard },
@@ -24,7 +24,7 @@ export function ClientSidebar() {
   const { user } = useAppSelector((state) => state.auth)
 
   const handleLogout = () => {
-    dispatch(logout())
+    dispatch(logoutUser())
     router.push("/")
   }
 

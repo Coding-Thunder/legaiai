@@ -18,30 +18,7 @@ interface ResearchState {
 }
 
 const initialState: ResearchState = {
-  researchList: [
-    {
-      id: "research1",
-      title: "Property Rights and Boundary Disputes - Supreme Court Ruling",
-      uploadedBy: "lawyer1",
-      verified: true,
-      credibilityScore: 95,
-      type: "case-law",
-      contentUrl: "/research/property-rights-ruling.pdf",
-      tags: ["property", "boundary", "civil"],
-      createdAt: "2024-01-10",
-    },
-    {
-      id: "research2",
-      title: "Contract Law Fundamentals",
-      uploadedBy: "lawyer2",
-      verified: false,
-      credibilityScore: 78,
-      type: "statute",
-      contentUrl: "/research/contract-law.pdf",
-      tags: ["contract", "commercial", "law"],
-      createdAt: "2024-01-12",
-    },
-  ],
+  researchList: [],
   loading: false,
 }
 

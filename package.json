@@ -39,11 +39,7 @@
     "@radix-ui/react-tooltip": "1.1.6",
     "@reduxjs/toolkit": "^2.9.2",
     "autoprefixer": "^10.4.20",
-<<<<<<< HEAD
-    "axios": "^1.12.2",
-=======
     "axios": "^1.13.1",
->>>>>>> b3feaf04f6de2744f45f25c41213522ef67cd04a
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",

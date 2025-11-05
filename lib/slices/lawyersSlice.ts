@@ -18,28 +18,7 @@ interface LawyersState {
 }
 
 const initialState: LawyersState = {
-  lawyers: [
-    {
-      id: "lawyer1",
-      name: "John Smith",
-      barNumber: "BAR123456",
-      isFirm: false,
-      specialization: ["Civil Law", "Property Law"],
-      rating: 4.8,
-      experience: 15,
-    },
-    {
-      id: "lawyer2",
-      name: "Legal Associates LLC",
-      barNumber: "BAR789012",
-      isFirm: true,
-      firmName: "Legal Associates LLC",
-      firmLogoUrl: "/logos/legal-associates.png",
-      specialization: ["Commercial Law", "Contract Law"],
-      rating: 4.6,
-      experience: 20,
-    },
-  ],
+  lawyers: [],
   loading: false,
 }
 

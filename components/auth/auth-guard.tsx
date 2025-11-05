@@ -22,8 +22,11 @@ export function AuthGuard({ children, requiredRole, redirectTo = "/auth/login" }
       return
     }
 
-    if (requiredRole && user?.role !== requiredRole) {
+
+
+    if (requiredRole && user?.role !== requiredRole.toUpperCase()) {
       router.push("/unauthorized")
+
       return
     }
   }, [isAuthenticated, user, requiredRole, redirectTo, router])
@@ -32,7 +35,7 @@ export function AuthGuard({ children, requiredRole, redirectTo = "/auth/login" }
     return null
   }
 
-  if (requiredRole && user?.role !== requiredRole) {
+  if (requiredRole && user?.role !== requiredRole.toUpperCase()) {
     return null
   }
 

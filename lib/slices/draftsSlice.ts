@@ -18,19 +18,7 @@ interface DraftsState {
 }
 
 const initialState: DraftsState = {
-  drafts: [
-    {
-      id: "draft1",
-      caseId: "1",
-      lawyerId: "lawyer1",
-      petitionType: "Civil",
-      content: "This is a sample legal draft for the property dispute case. The petitioner hereby requests...",
-      status: "draft",
-      attachedResearch: ["research1"],
-      createdAt: "2024-01-16",
-      updatedAt: "2024-01-16",
-    },
-  ],
+  drafts: [],
   loading: false,
 }
 

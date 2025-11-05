@@ -9,23 +9,19 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks"
 import { loginUser, clearError } from "@/lib/slices/authSlice"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { APP_ROLE } from "@/lib/utils"
 
 export default function LoginPage() {
   const dispatch = useAppDispatch()
   const router = useRouter()
   const { isLoading, error, isAuthenticated } = useAppSelector((state) => state.auth)
-  
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   })
 
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.push('/dashboard')
-    }
-  }, [isAuthenticated, router])
+
 
   // Clear errors when component mounts
   useEffect(() => {
@@ -34,7 +30,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.email || !formData.password) {
       return
     }
@@ -44,13 +40,20 @@ export default function LoginPage() {
         email: formData.email,
         password: formData.password
       })).unwrap()
-      
-      // Redirect based on user role
-      if (result.user.role === 'lawyer') {
+      console.log(result)
+
+      if (result.role === APP_ROLE.LAWER) {
         router.push('/dashboard/lawyer')
       } else {
         router.push('/dashboard/client')
       }
+
+
+      // if (result.role == APP_ROLE.LAWER) {
+      //   console.log('/dashboard/lawyer')
+      // } else {
+      //   console.log('/dashboard/client')
+      // }
     } catch (error) {
       // Error is already handled by Redux
       console.error('Login failed:', error)
@@ -73,7 +76,7 @@ export default function LoginPage() {
               {error}
             </div>
           )}
-          
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium mb-2">
